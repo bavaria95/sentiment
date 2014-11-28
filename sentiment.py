@@ -1,11 +1,10 @@
 import pandas as pd
 import sys, os
-import math, nltk, re
+import math, nltk, re, pickle
  
 file_to_read = r"train.tsv"
 train_data = pd.read_table(file_to_read)
  
-features = []
 
 size = train_data.count()[0]
 
@@ -22,50 +21,53 @@ for i in range(size):
 
 train_data['Bigrams'] = bigrams
 
-# print train_data
 
+A = []
 
-for index, number, phraseid, phrase, sentiment, unigrams, bigrams in train_data[0:117].itertuples():
+combs = [(0, 2), (0, 3), (0, 4), (1, 2), (1, 3), (2, 3), (2, 4)]
+for i in range(5):
+	A.append(train_data[train_data['Sentiment'] == i].count()[0])
+
+matrix = []
+
+for index, number, phraseid, phrase, sentiment, unigrams, bigrams in train_data[0:4].itertuples():
+	
 	V = 0
 
 	V_uni = 0
 	V_bi = 0
 
-	N_t = 0
-	P_t = 0
-
-	P = train_data[train_data['Sentiment'] == 0].count()[0]
-
-	N = train_data[train_data['Sentiment'] == 2].count()[0]
-
+	features = [0] * len(combs)
 
 	for uni in unigrams:
 		uni = re.escape(uni)
-
-		N_t_t = train_data[(train_data['Sentiment'] == 0) & (train_data['Phrase'].str.contains('\W' + uni + '\W'))].count()[0]
-		P_t_t = train_data[(train_data['Sentiment'] == 2) & (train_data['Phrase'].str.contains('\W' + uni + '\W'))].count()[0]
-
 		C_uni = len(re.findall('\W?' + uni + '\W?', phrase))
 
-
-		if P * N_t_t != 0 and N * P_t_t != 0:
-			V_uni = C_uni * math.log((N * P_t_t) / (P * N_t_t), 2)
-			print (uni, C_uni, P, N, P_t_t, N_t_t, V_uni)
-		else:
-			print (uni, C_uni, P, N, P_t_t, N_t_t)			
+		features_tmp = []
+		for pair in combs:
+			N_t = train_data[(train_data['Sentiment'] == pair[0]) & (train_data['Phrase'].str.contains('\W' + uni + '\W'))].count()[0]
+			P_t = train_data[(train_data['Sentiment'] == pair[1]) & (train_data['Phrase'].str.contains('\W' + uni + '\W'))].count()[0]
 
 
-	# for bi in bigrams:
-	# 	N_t_bi += train_data[(train_data['Sentiment'] == 0) & (train_data['Phrase'].str.contains(bi))].count()[0]
+			if N_t != 0 and P_t != 0:
+				V_uni = C_uni * math.log((A[pair[0]] * P_t) / float((A[pair[1]] * N_t)), 2)
+			elif N_t != 0:
+				V_uni = C_uni * math.log(A[pair[0]] / float((A[pair[1]] * N_t)), 2)
+			elif P_t != 0:
+				V_uni = C_uni * math.log((A[pair[0]] * P_t) / float(A[pair[1]]), 2)
+			else:
+				V_uni = 0
 
+			features_tmp.append(V_uni)
 
+		features = [(x + y) for (x, y) in zip(features, features_tmp)]
+		features = map(lambda x: 1.0 * x / len(unigrams), features)
 
-# jak nie wiemy co to bedzie pozytywny i negatywny to moim zdaniem bedzie sensownie zgenerowac takie features()
-		# 0 2
-		# 0 3
-		# 0 4
-		# 1 2
-		# 1 3
-		# 1 4
-		# 2 3
-		# 2 4
+		matrix.append(features)
+
+		print number
+
+		###for bigrams
+
+with open('unigrams.dat', 'wb') as f:
+    pickle.dump(matrix, f)

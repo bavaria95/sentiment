@@ -30,10 +30,9 @@ for i in range(5):
 
 matrix = []
 
-for index, number, phraseid, phrase, sentiment, unigrams, bigrams in train_data[0:4].itertuples():
+for index, number, phraseid, phrase, sentiment, unigrams, bigrams in train_data[0:1].itertuples(): 		#forAll
 	
 	V = 0
-
 	V_uni = 0
 	V_bi = 0
 
@@ -58,16 +57,19 @@ for index, number, phraseid, phrase, sentiment, unigrams, bigrams in train_data[
 			else:
 				V_uni = 0
 
+			print ('unigram = ' + uni + ', pair = ' + str(pair), ', C = ' + str(C_uni) + ', N = ' + str(A[pair[0]]) + ', P = ' + str(A[pair[1]]) + ', Pt = ' + str(P_t) + ', Nt = ' + str(N_t) + ', V = ' + str(V_uni))
 			features_tmp.append(V_uni)
+			print ('features_tmp = ' + str(features_tmp))
+			print ('features = ' + str(features))
+			print ('\n')
 
+		features_tmp = map(lambda x: 1.0 * x / len(unigrams), features_tmp)
 		features = [(x + y) for (x, y) in zip(features, features_tmp)]
-		features = map(lambda x: 1.0 * x / len(unigrams), features)
 
-		matrix.append(features)
+	matrix.append(features)
+	# print number
 
-		print number
-
-		###for bigrams
+	###for bigrams
 
 with open('unigrams.dat', 'wb') as f:
     pickle.dump(matrix, f)
